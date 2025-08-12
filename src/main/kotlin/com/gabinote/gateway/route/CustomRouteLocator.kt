@@ -59,7 +59,8 @@ class CustomRouteLocator(
         if (path.enableAuth) {
             booleanSpec.filters { filterSpec ->
                 filterSpec.filter(authenticationFilterFactory.apply { config ->
-                    config.role = path.role
+                    config.role =
+                        path.role ?: throw IllegalArgumentException("Role must be provided when enableAuth is true")
                 })
             }
         }

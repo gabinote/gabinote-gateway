@@ -22,7 +22,7 @@ class Path(
     val enableAuth: Boolean,
 
     @Column("GATEWAY_PATH_ROLE")
-    val role: String,
+    val role: String? = null,
 
     @Column("GATEWAY_PATH_HTTP_METHOD")
     val _httpMethod: String,

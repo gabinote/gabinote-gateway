@@ -12,7 +12,7 @@ class PathEntityMapper : BiFunction<Row, RowMetadata, Path> {
         return Path(
             id = t.get("GATEWAY_PATH_PK", Long::class.java) ?: throw IllegalArgumentException("Path ID is required"),
             path = t.get("GATEWAY_PATH_PATH", String::class.java) ?: throw IllegalArgumentException("Path is required"),
-            role = t.get("GATEWAY_PATH_ROLE", String::class.java) ?: throw IllegalArgumentException("Role is required"),
+            role = t.get("GATEWAY_PATH_ROLE", String::class.java),
             _httpMethod = t.get("GATEWAY_PATH_HTTP_METHOD", String::class.java)
                 ?: throw IllegalArgumentException("HTTP Method is required"),
             enableAuth = t.get("GATEWAY_PATH_ENABLE_AUTH", Boolean::class.java)

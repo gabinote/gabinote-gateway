@@ -5,7 +5,6 @@ import com.gabinote.gateway.dto.path.service.PathSimpleResServiceDto
 import com.gabinote.gateway.mapper.item.ItemMapper
 
 object PathMapper {
-
     fun toServiceDto(path: Path): PathSimpleResServiceDto {
         return PathSimpleResServiceDto(
             enableAuth = path.enableAuth,
