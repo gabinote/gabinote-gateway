@@ -47,7 +47,6 @@ class CustomRouteLocator(
 
     private fun setPredicateSpec(path: PathSimpleResServiceDto, predicateSpec: PredicateSpec): Buildable<Route> {
         logger.info { "[RouteLocator] ${path.item.name} | ${path.httpMethod} | /${path.item.prefix}${path.path} ${path.role}" }
-
         val booleanSpec = predicateSpec
             .path("/${path.item.prefix}${path.path}")
             .and()

@@ -11,7 +11,8 @@ object PathMapper {
             role = path.role,
             item = ItemMapper.toServiceDto(path.item),
             httpMethod = path.httpMethod,
-            path = path.path
+            path = path.path,
+            isEnabled = path.isEnabled
         )
     }
 }

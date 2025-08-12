@@ -29,6 +29,7 @@ class PathEntityMapper : BiFunction<Row, RowMetadata, Path> {
                 prefix = t.get("GATEWAY_ITEM_PREFIX", String::class.java)
             ),
             priority = t.get("GATEWAY_PATH_PRIORITY", Int::class.java) ?: 0,
+            isEnabled = t.get("GATEWAY_PATH_IS_ENABLED", Boolean::class.java) ?: true,
         )
     }
 }

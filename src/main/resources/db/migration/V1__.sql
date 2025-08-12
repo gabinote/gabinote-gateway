@@ -1,4 +1,3 @@
-
 CREATE TABLE GATEWAY_ITEM (
                               GATEWAY_ITEM_PK BIGINT AUTO_INCREMENT PRIMARY KEY,
                               GATEWAY_ITEM_NAME VARCHAR(255) NOT NULL,
@@ -17,9 +16,9 @@ CREATE TABLE GATEWAY_PATH (
         NOT NULL,
                               GATEWAY_ITEM_PK BIGINT NOT NULL,
                               GATEWAY_PATH_PRIORITY INT NOT NULL,
+                              GATEWAY_PATH_IS_ENABLED TINYINT(1) NOT NULL DEFAULT 1,
                               CONSTRAINT fk_gateway_path_item
                                   FOREIGN KEY (GATEWAY_ITEM_PK)
                                       REFERENCES GATEWAY_ITEM (GATEWAY_ITEM_PK)
                                       ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

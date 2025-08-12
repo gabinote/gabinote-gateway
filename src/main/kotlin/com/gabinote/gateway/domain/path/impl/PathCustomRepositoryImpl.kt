@@ -14,6 +14,7 @@ class PathCustomRepositoryImpl(
         val query = """
             SELECT * FROM GATEWAY_PATH as p
                   INNER JOIN GATEWAY_ITEM as i ON i.GATEWAY_ITEM_PK = p.GATEWAY_ITEM_PK
+                  WHERE p.GATEWAY_PATH_IS_ENABLED = true
                   ORDER BY p.GATEWAY_PATH_PRIORITY DESC
         """.trimIndent()
 

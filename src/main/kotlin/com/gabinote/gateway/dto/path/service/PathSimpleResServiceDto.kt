@@ -10,8 +10,9 @@ data class PathSimpleResServiceDto(
     val role: String? = null,
     val httpMethod: HttpMethod,
     val item: ItemResServiceDto,
+    val isEnabled: Boolean = true
 
-    ) {
+) {
     fun itemUrl(): String {
         return "${item.url}:${item.port}"
     }

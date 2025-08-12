@@ -155,6 +155,17 @@ class GateWayIntegrationTest : FeatureSpec() {
                     body("role", hasItems("ROLE_ADMIN"))
                 }
             }
+
+            scenario("Path 설정이 비활성화인 Path에 요청하면 404를 리턴한다.") {
+                Given {
+                    port(port)
+                    header("Authorization", "Bearer ${testKeycloakUtil.getAccessToken(TestUser.ADMIN)}")
+                }.When {
+                    get("/optional-auth")
+                }.Then {
+                    statusCode(404)
+                }
+            }
         }
     }
 
