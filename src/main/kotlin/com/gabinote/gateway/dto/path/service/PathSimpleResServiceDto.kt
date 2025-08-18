@@ -7,11 +7,12 @@ import org.springframework.http.HttpMethod
 data class PathSimpleResServiceDto(
     val path: String,
     val enableAuth: Boolean,
-    val role: String,
+    val role: String? = null,
     val httpMethod: HttpMethod,
     val item: ItemResServiceDto,
+    val isEnabled: Boolean = true
 
-    ) {
+) {
     fun itemUrl(): String {
         return "${item.url}:${item.port}"
     }

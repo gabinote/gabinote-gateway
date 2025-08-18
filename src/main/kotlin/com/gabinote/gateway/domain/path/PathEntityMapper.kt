@@ -12,7 +12,7 @@ class PathEntityMapper : BiFunction<Row, RowMetadata, Path> {
         return Path(
             id = t.get("GATEWAY_PATH_PK", Long::class.java) ?: throw IllegalArgumentException("Path ID is required"),
             path = t.get("GATEWAY_PATH_PATH", String::class.java) ?: throw IllegalArgumentException("Path is required"),
-            role = t.get("GATEWAY_PATH_ROLE", String::class.java) ?: throw IllegalArgumentException("Role is required"),
+            role = t.get("GATEWAY_PATH_ROLE", String::class.java),
             _httpMethod = t.get("GATEWAY_PATH_HTTP_METHOD", String::class.java)
                 ?: throw IllegalArgumentException("HTTP Method is required"),
             enableAuth = t.get("GATEWAY_PATH_ENABLE_AUTH", Boolean::class.java)
@@ -29,6 +29,7 @@ class PathEntityMapper : BiFunction<Row, RowMetadata, Path> {
                 prefix = t.get("GATEWAY_ITEM_PREFIX", String::class.java)
             ),
             priority = t.get("GATEWAY_PATH_PRIORITY", Int::class.java) ?: 0,
+            isEnabled = t.get("GATEWAY_PATH_IS_ENABLED", Boolean::class.java) ?: true,
         )
     }
 }

@@ -22,13 +22,16 @@ class Path(
     val enableAuth: Boolean,
 
     @Column("GATEWAY_PATH_ROLE")
-    val role: String,
+    val role: String? = null,
 
     @Column("GATEWAY_PATH_HTTP_METHOD")
     val _httpMethod: String,
 
     @Column("GATEWAY_ITEM_PK")
-    val item: Item
+    val item: Item,
+
+    @Column("GATEWAY_PATH_IS_ENABLED")
+    val isEnabled: Boolean = true
 
 ) {
     val httpMethod: HttpMethod

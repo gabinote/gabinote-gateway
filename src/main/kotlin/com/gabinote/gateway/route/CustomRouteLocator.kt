@@ -47,7 +47,6 @@ class CustomRouteLocator(
 
     private fun setPredicateSpec(path: PathSimpleResServiceDto, predicateSpec: PredicateSpec): Buildable<Route> {
         logger.info { "[RouteLocator] ${path.item.name} | ${path.httpMethod} | /${path.item.prefix}${path.path} ${path.role}" }
-
         val booleanSpec = predicateSpec
             .path("/${path.item.prefix}${path.path}")
             .and()
@@ -59,7 +58,8 @@ class CustomRouteLocator(
         if (path.enableAuth) {
             booleanSpec.filters { filterSpec ->
                 filterSpec.filter(authenticationFilterFactory.apply { config ->
-                    config.role = path.role
+                    config.role =
+                        path.role ?: throw IllegalArgumentException("Role must be provided when enableAuth is true")
                 })
             }
         }
