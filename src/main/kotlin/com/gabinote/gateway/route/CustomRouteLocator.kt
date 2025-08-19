@@ -79,6 +79,7 @@ class CustomRouteLocator(
             .filters { filterSpec ->
                 filterSpec
                     .filters(
+                        
                         cleanRequestFilterFactory.apply { config ->
                             CleanRequestFilterFactory.Config()
                         },
