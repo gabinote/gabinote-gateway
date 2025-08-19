@@ -14,12 +14,12 @@ import java.time.LocalDateTime
 
 private val logger = KotlinLogging.logger {}
 
-@RequestMapping("/api/v1/management")
+@RequestMapping("/management")
 @RestController
 class ManagementApiController(
     private val applicationEventPublisher: ApplicationEventPublisher
 ) {
-    @PostMapping("/refresh")
+    @PostMapping("/reload")
     fun refreshGateway(
         @AuthenticationPrincipal jwt: Jwt
     ): Mono<ResponseEntity<String>> {
