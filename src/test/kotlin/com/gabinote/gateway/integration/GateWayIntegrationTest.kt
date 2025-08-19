@@ -6,7 +6,6 @@ import com.gabinote.gateway.testSupport.keycloak.TestKeycloakUtil
 import com.gabinote.gateway.testSupport.keycloak.TestUser
 import com.gabinote.gateway.testSupport.testApi.TestApiContainerInitializer
 import io.kotest.core.spec.style.FeatureSpec
-import io.r2dbc.spi.ConnectionFactory
 import io.restassured.RestAssured
 import io.restassured.config.EncoderConfig.encoderConfig
 import io.restassured.module.kotlin.extensions.Given
@@ -20,10 +19,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
+import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.testcontainers.junit.jupiter.Testcontainers
+
 
 @Import(TestKeycloakUtil::class)
 @TestPropertySource(locations = ["classpath:application-test.properties"])
@@ -37,7 +38,7 @@ class GateWayIntegrationTest : FeatureSpec() {
     var port: Int = 0
 
     @Autowired
-    lateinit var connectionFactory: ConnectionFactory
+    lateinit var databaseClient: DatabaseClient
 
     @Autowired
     lateinit var testKeycloakUtil: TestKeycloakUtil
@@ -164,6 +165,56 @@ class GateWayIntegrationTest : FeatureSpec() {
                     get("/optional-auth")
                 }.Then {
                     statusCode(404)
+                }
+            }
+
+            scenario("path 설정이 되지 않은 경로에 요청하면 실패했다가, 데이터를 추가한 후 reload 한 후 요청을 하면 성공적으로 라우팅된다.") {
+                Given {
+                    port(port)
+                    header("Authorization", "Bearer ${testKeycloakUtil.getAccessToken(TestUser.ADMIN)}")
+                }.When {
+                    get("/path/123")
+                }.Then {
+                    statusCode(404)
+                }
+
+                databaseClient.sql {
+                    """
+                        INSERT INTO GATEWAY_PATH (GATEWAY_PATH_PK, GATEWAY_PATH_PATH, GATEWAY_PATH_ENABLE_AUTH, GATEWAY_PATH_ROLE,
+                                                  GATEWAY_PATH_HTTP_METHOD, GATEWAY_ITEM_PK, GATEWAY_PATH_PRIORITY, GATEWAY_PATH_IS_ENABLED)
+                        VALUES (10, '/path/{id}/**', 0, null, 'GET', 2, 1, 1);
+                    """.trimIndent()
+                }.then().block()
+                Given {
+                    port(port)
+                    header("Authorization", "Bearer ${testKeycloakUtil.getAccessToken(TestUser.ADMIN)}")
+                }.When {
+                    post("/management/reload")
+                }.Then {
+                    statusCode(200)
+                }
+
+                Given {
+                    port(port)
+                    header("Authorization", "Bearer ${testKeycloakUtil.getAccessToken(TestUser.ADMIN)}")
+                }.When {
+                    get("/path/123")
+                }.Then {
+                    statusCode(200)
+                    body("name", equalTo("sec-api"))
+                    body("message", equalTo("123"))
+                }
+
+            }
+
+            scenario("관리자가 아닌 사용자가 관리 API에 접근하면 403을 리턴한다.") {
+                Given {
+                    port(port)
+                    header("Authorization", "Bearer ${testKeycloakUtil.getAccessToken(TestUser.USER)}")
+                }.When {
+                    get("/management/reload")
+                }.Then {
+                    statusCode(403)
                 }
             }
         }
