@@ -43,7 +43,4 @@ application.properties
 application-test.properties
 application-prod.properties
 application-prod.yml
-logback-test.xml
 logback-prod.xml
-
-realm-export.json

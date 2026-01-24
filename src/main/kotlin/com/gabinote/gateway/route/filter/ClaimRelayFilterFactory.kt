@@ -7,11 +7,15 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 
+/**
+ * JWT 클레임을 헤더로 릴레이하는 필터 팩토리
+ */
 @Component
 class ClaimRelayFilterFactory : GatewayFilterFactory<ClaimRelayFilterFactory.Config> {
 
     data class Config(
-        val isEnabled: Boolean = true,
+        var subHeader: String = "X-Token-Sub",
+        var roleHeader: String = "X-Token-Role",
     )
 
     override fun newConfig(): Config {
@@ -24,10 +28,10 @@ class ClaimRelayFilterFactory : GatewayFilterFactory<ClaimRelayFilterFactory.Con
                 .flatMap { ctx ->
                     (ctx.authentication.principal as? Jwt)?.let { jwt ->
                         val sub = jwt.subject
-                        exchange.request.headers.set("X-Token-Sub", sub)
+                        exchange.request.headers.set(config.subHeader, sub)
                     }
                     val roles = ctx.authentication.authorities.map { it.authority }
-                    exchange.request.headers.set("X-Token-Role", roles)
+                    exchange.request.headers[config.roleHeader] = roles.joinToString(",")
 
                     chain.filter(exchange).thenReturn(true)
                 }

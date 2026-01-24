@@ -72,12 +72,14 @@ dependencies {
     // https://mvnrepository.com/artifact/org.keycloak/keycloak-admin-client
     testImplementation("org.keycloak:keycloak-admin-client:26.0.5")
 
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+
 }
 
 dependencyManagement {
     imports {
         mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
-        mavenBom("org.testcontainers:testcontainers-bom:1.20.6")
+        mavenBom("org.testcontainers:testcontainers-bom:2.0.2")
     }
 }
 

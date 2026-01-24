@@ -1,0 +1,56 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  main:
+    allow-bean-definition-overriding: true
+    web-application-type: reactive
+  flyway:
+    baseline-on-migrate: true
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+          httpclient:
+            wiretap: true
+
+server:
+  error:
+    whitelabel:
+      enabled: false
+
+logging:
+  config: classpath:logback-test.xml
+
+keycloak:
+  admin-client:
+    realm: gabinote-test
+
+test-keycloak:
+  admin-client:
+    realm: master
+    client-id: test-admin-cli
+    client-secret: admin-secret
+  test-client:
+    id: gabinote-test-client
+    secret: test-secret
+
+management:
+  endpoint:
+    gateway:
+      access: read_only
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+gateway:
+  headers:
+    request-id-header: X-Request-ID
+    roles-header: X-Token-Roles
+    sub-header: X-Token-Sub
+    secret-header: X-Gateway-Secret
+  secret:
+    secret-key: test-gateway-secret-key
