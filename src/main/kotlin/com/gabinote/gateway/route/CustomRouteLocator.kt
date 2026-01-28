@@ -5,7 +5,9 @@ import com.gabinote.gateway.config.properties.HeaderProperties
 import com.gabinote.gateway.dto.path.service.PathSimpleResServiceDto
 import com.gabinote.gateway.route.filter.*
 import com.gabinote.gateway.service.PathService
+import com.gabinote.gateway.util.rateLimit.RateLimiterFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver
 import org.springframework.cloud.gateway.route.Route
 import org.springframework.cloud.gateway.route.RouteLocator
 import org.springframework.cloud.gateway.route.builder.BooleanSpec
@@ -30,6 +32,8 @@ class CustomRouteLocator(
     private val gatewayAuthenticationCodeFilter: GatewayAuthenticationCodeFilter,
     private val headerProperties: HeaderProperties,
     private val gatewaySecretProperties: GatewaySecretProperties,
+    private val ipKeyResolver: KeyResolver,
+    private val rateLimiterFactory: RateLimiterFactory,
 ) : RouteLocator {
 
     override fun getRoutes(): Flux<Route> {
@@ -60,10 +64,34 @@ class CustomRouteLocator(
         setRewritePrefix(booleanSpec, path.item.prefix)
         setCommonFilters(booleanSpec)
 
+
         if (path.enableAuth) {
+            logger.debug { "[RouteLocator] Authentication enabled for path: ${path.path} with role: ${path.role}" }
             setAuthenticationFilter(booleanSpec, path)
         }
+
+        if (path.isRateLimitingEnabled()) {
+            logger.debug { "[RouteLocator] Rate limiting enabled for path: ${path.path} with replenishRate: ${path.replenishRate}, burstCapacity: ${path.burstCapacity}" }
+            setRateLimit(booleanSpec, path)
+        }
+
+
         return booleanSpec.uri(path.itemUrl())
+    }
+
+    private fun setRateLimit(
+        booleanSpec: BooleanSpec,
+        path: PathSimpleResServiceDto,
+    ) {
+        booleanSpec.filters { filterSpec ->
+            filterSpec.requestRateLimiter {
+                it.keyResolver = ipKeyResolver
+                it.rateLimiter = rateLimiterFactory.create(
+                    path.replenishRate!!,
+                    path.burstCapacity!!
+                )
+            }
+        }
     }
 
     /**
@@ -127,6 +155,10 @@ class CustomRouteLocator(
 
                     )
             }
+    }
+
+    private fun PathSimpleResServiceDto.isRateLimitingEnabled(): Boolean {
+        return this.replenishRate != null && this.burstCapacity != null
     }
 
 }

@@ -10,9 +10,11 @@ data class PathSimpleResServiceDto(
     val role: String? = null,
     val httpMethod: HttpMethod,
     val item: ItemResServiceDto,
-    val isEnabled: Boolean = true
+    val isEnabled: Boolean = true,
+    val replenishRate: Int? = null,
+    val burstCapacity: Int? = null,
 
-) {
+    ) {
     fun itemUrl(): String {
         return "${item.url}:${item.port}"
     }

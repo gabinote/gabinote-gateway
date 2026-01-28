@@ -37,14 +37,18 @@ test-keycloak:
     id: gabinote-test-client
     secret: test-secret
 
+
 management:
-  endpoint:
-    gateway:
-      access: read_only
+  server:
+    port: 9090
+    address: 0.0.0.0
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: "*"
+  endpoint:
+    gateway:
+      access: read_only
 
 gateway:
   headers:

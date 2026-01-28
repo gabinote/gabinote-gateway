@@ -7,6 +7,7 @@ import com.gabinote.gateway.domain.path.PathRepository
 import com.gabinote.gateway.testSupport.db.testDb.DatabaseContainerInitializer
 import com.gabinote.gateway.testSupport.keycloak.KeycloakContainerInitializer
 import com.gabinote.gateway.testSupport.keycloak.TestKeycloakUtil
+import com.gabinote.gateway.testSupport.redis.RedisContainerInitializer
 import com.gabinote.gateway.testSupport.stubServer.TestStubServerContainerInitializer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.configureFor
@@ -32,7 +33,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@ContextConfiguration(initializers = [DatabaseContainerInitializer::class, KeycloakContainerInitializer::class, TestStubServerContainerInitializer::class])
+@ContextConfiguration(initializers = [DatabaseContainerInitializer::class, KeycloakContainerInitializer::class, TestStubServerContainerInitializer::class, RedisContainerInitializer::class])
 class GateWayIntegrationTestTemplate : FeatureSpec() {
     @LocalServerPort
     var port: Int = 0
@@ -143,9 +144,10 @@ class GateWayIntegrationTestTemplate : FeatureSpec() {
             """
         INSERT INTO GATEWAY_PATH (
             GATEWAY_PATH_PK, GATEWAY_PATH_PATH, GATEWAY_PATH_PRIORITY, GATEWAY_PATH_ENABLE_AUTH, 
-            GATEWAY_PATH_ROLE, GATEWAY_PATH_HTTP_METHOD, GATEWAY_ITEM_PK, GATEWAY_PATH_IS_ENABLED
+            GATEWAY_PATH_ROLE, GATEWAY_PATH_HTTP_METHOD, GATEWAY_ITEM_PK, GATEWAY_PATH_IS_ENABLED,
+            GATEWAY_PATH_RATE_LIMIT_REPLENISH, GATEWAY_PATH_RATE_LIMIT_BURST
         ) VALUES (
-            :id, :path, :priority, :enableAuth, :role, :httpMethod, :itemId, :isEnabled
+            :id, :path, :priority, :enableAuth, :role, :httpMethod, :itemId, :isEnabled, :rateLimitReplenish, :rateLimitBurst
         )
     """.trimIndent()
         )
@@ -157,11 +159,23 @@ class GateWayIntegrationTestTemplate : FeatureSpec() {
             .bind("itemId", path.item.id)
             .bind("isEnabled", path.isEnabled)
 
-        // 2. Nullable 필드(role) 조건부 바인딩 (변수 재할당 필수!)
+        // 2. Nullable 필드(role) 조건부 바인딩
         spec = if (path.role != null) {
             spec.bind("role", path.role)
         } else {
             spec.bindNull("role", String::class.java)
+        }
+
+        spec = if (path.replenishRate != null) {
+            spec.bind("rateLimitReplenish", path.replenishRate)
+        } else {
+            spec.bindNull("rateLimitReplenish", Integer::class.java)
+        }
+
+        spec = if (path.burstCapacity != null) {
+            spec.bind("rateLimitBurst", path.burstCapacity)
+        } else {
+            spec.bindNull("rateLimitBurst", Integer::class.java)
         }
 
         // 3. 실행

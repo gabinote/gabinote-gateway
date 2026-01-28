@@ -17,6 +17,8 @@ CREATE TABLE GATEWAY_PATH (
                               GATEWAY_ITEM_PK BIGINT NOT NULL,
                               GATEWAY_PATH_PRIORITY INT NOT NULL,
                               GATEWAY_PATH_IS_ENABLED TINYINT(1) NOT NULL DEFAULT 1,
+                              GATEWAY_PATH_RATE_LIMIT_REPLENISH INT,
+                              GATEWAY_PATH_RATE_LIMIT_BURST INT,
                               CONSTRAINT fk_gateway_path_item
                                   FOREIGN KEY (GATEWAY_ITEM_PK)
                                       REFERENCES GATEWAY_ITEM (GATEWAY_ITEM_PK)
