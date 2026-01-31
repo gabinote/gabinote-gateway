@@ -16,6 +16,7 @@ class DatabaseContainerInitializer : ApplicationContextInitializer<ConfigurableA
             withPassword("admin")
             withDatabaseName("test")
             withLabel("test-container", "mariadb")
+            withReuse(true)
         }
     }
 

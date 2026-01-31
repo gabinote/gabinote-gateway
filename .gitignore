@@ -42,5 +42,6 @@ out/
 application.properties
 application-test.properties
 application-prod.properties
+
+application-preview.yml
 application-prod.yml
-logback-prod.xml
