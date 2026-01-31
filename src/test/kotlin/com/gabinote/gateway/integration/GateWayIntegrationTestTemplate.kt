@@ -9,8 +9,6 @@ import com.gabinote.gateway.testSupport.keycloak.KeycloakContainerInitializer
 import com.gabinote.gateway.testSupport.keycloak.TestKeycloakUtil
 import com.gabinote.gateway.testSupport.redis.RedisContainerInitializer
 import com.gabinote.gateway.testSupport.stubServer.TestStubServerContainerInitializer
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.configureFor
 import io.kotest.core.spec.style.FeatureSpec
 import io.restassured.RestAssured
 import io.restassured.config.EncoderConfig.encoderConfig
@@ -186,11 +184,9 @@ class GateWayIntegrationTestTemplate : FeatureSpec() {
 
 
     private fun reset() {
-        configureFor("localhost", prefixApiPort.toInt())
-        WireMock.reset()
-
-        configureFor("localhost", noPrefixApiPort.toInt())
-        WireMock.reset()
+        // WireMockServer 인스턴스를 직접 사용하여 reset (더 안정적)
+        TestStubServerContainerInitializer.firApi.resetAll()
+        TestStubServerContainerInitializer.secApi.resetAll()
     }
 
 
