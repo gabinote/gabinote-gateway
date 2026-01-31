@@ -8,6 +8,7 @@ import com.gabinote.gateway.testSupport.db.testDb.DatabaseContainerInitializer
 import com.gabinote.gateway.testSupport.keycloak.KeycloakContainerInitializer
 import com.gabinote.gateway.testSupport.keycloak.TestKeycloakUtil
 import com.gabinote.gateway.testSupport.redis.RedisContainerInitializer
+import com.gabinote.gateway.testSupport.redis.TestRedisHelper
 import com.gabinote.gateway.testSupport.stubServer.TestStubServerContainerInitializer
 import io.kotest.core.spec.style.FeatureSpec
 import io.restassured.RestAssured
@@ -26,15 +27,18 @@ import org.springframework.test.context.ContextConfiguration
 import org.testcontainers.junit.jupiter.Testcontainers
 
 
-@Import(TestKeycloakUtil::class)
+@Import(TestKeycloakUtil::class, TestRedisHelper::class)
 @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(initializers = [DatabaseContainerInitializer::class, KeycloakContainerInitializer::class, TestStubServerContainerInitializer::class, RedisContainerInitializer::class])
-class GateWayIntegrationTestTemplate : FeatureSpec() {
+class GateWayIntegrationTestTemplate() : FeatureSpec() {
     @LocalServerPort
     var port: Int = 0
+
+    @Autowired
+    lateinit var testRedisHelper: TestRedisHelper
 
     @Autowired
     lateinit var applicationEventPublisher: ApplicationEventPublisher
@@ -64,6 +68,7 @@ class GateWayIntegrationTestTemplate : FeatureSpec() {
         }
 
         beforeTest {
+            testRedisHelper.flushAll()
             reset()
             cleanDB()
             setupBaseApiItem()
