@@ -11,7 +11,9 @@ private val logger = KotlinLogging.logger {}
 
 class RedisContainerInitializer : ApplicationContextInitializer<ConfigurableApplicationContext> {
 
+
     companion object {
+        @JvmStatic
         val redisContainer = RedisContainer(
             DockerImageName.parse("redis:8.4")
         ).apply {
