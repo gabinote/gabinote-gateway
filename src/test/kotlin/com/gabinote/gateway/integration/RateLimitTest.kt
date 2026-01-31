@@ -16,7 +16,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 // 1. path 설정
                 val targetPath = Path(
                     id = 1L,
-                    path = "/**",
+                    path = "/no-limit/**",
                     enableAuth = false,
                     priority = 1,
                     _httpMethod = "GET",
@@ -30,7 +30,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 // 2. stub 서버 설정
                 configureFor(noPrefixItem.port)
                 stubFor(
-                    get(urlEqualTo("/get"))
+                    get(urlEqualTo("/no-limit/get"))
                         .willReturn(
                             aResponse()
                                 .withStatus(200)
@@ -43,7 +43,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 Given {
                     port(port)
                 }.When {
-                    get("/get")
+                    get("/no-limit/get")
                 }.Then {
                     statusCode(200)
                     body("name", equalTo("no-prefix-api"))
@@ -53,7 +53,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 Given {
                     port(port)
                 }.When {
-                    get("/get")
+                    get("/no-limit/get")
                 }.Then {
                     statusCode(200)
                     body("name", equalTo("no-prefix-api"))
@@ -63,7 +63,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 // 1. path 설정
                 val targetPath = Path(
                     id = 1L,
-                    path = "/**",
+                    path = "/limited/**",
                     enableAuth = false,
                     priority = 1,
                     _httpMethod = "GET",
@@ -77,7 +77,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 // 2. stub 서버 설정
                 configureFor(noPrefixItem.port)
                 stubFor(
-                    get(urlEqualTo("/get"))
+                    get(urlEqualTo("/limited/get"))
                         .willReturn(
                             aResponse()
                                 .withStatus(200)
@@ -90,7 +90,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 Given {
                     port(port)
                 }.When {
-                    get("/get")
+                    get("/limited/get")
                 }.Then {
                     statusCode(200)
                     body("name", equalTo("no-prefix-api"))
@@ -100,7 +100,7 @@ class RateLimitTest : GateWayIntegrationTestTemplate() {
                 Given {
                     port(port)
                 }.When {
-                    get("/get")
+                    get("/limited/get")
                 }.Then {
                     statusCode(429)
 
