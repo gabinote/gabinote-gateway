@@ -15,7 +15,8 @@ class DatabaseContainerInitializer : ApplicationContextInitializer<ConfigurableA
             withUsername("admin")
             withPassword("admin")
             withDatabaseName("test")
-            withLabel("group", "test-db")
+            withLabel("test-container", "mariadb")
+            withReuse(true)
         }
     }
 
@@ -46,18 +47,18 @@ class DatabaseContainerInitializer : ApplicationContextInitializer<ConfigurableA
         flyway.clean()
         flyway.migrate()
 
-        val testDataSetFlyway = Flyway.configure()
-            .dataSource(
-                database.jdbcUrl,
-                database.username,
-                database.password
-            )
-            .cleanDisabled(false)
-            .locations("classpath:dataset")
-            .validateOnMigrate(true)
-            .load()
-
-        testDataSetFlyway.migrate()
+//        val testDataSetFlyway = Flyway.configure()
+//            .dataSource(
+//                database.jdbcUrl,
+//                database.username,
+//                database.password
+//            )
+//            .cleanDisabled(false)
+//            .locations("classpath:dataset")
+//            .validateOnMigrate(true)
+//            .load()
+//
+//        testDataSetFlyway.migrate()
     }
 
 

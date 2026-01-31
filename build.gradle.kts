@@ -54,6 +54,7 @@ dependencies {
     testImplementation("org.testcontainers:r2dbc")
     // https://mvnrepository.com/artifact/org.dbunit/dbunit
     testImplementation("org.dbunit:dbunit:3.0.0")
+    testImplementation("com.redis.testcontainers:testcontainers-redis-junit:1.6.4")
 
     val kotestVersion = "5.9.1"
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
@@ -72,12 +73,16 @@ dependencies {
     // https://mvnrepository.com/artifact/org.keycloak/keycloak-admin-client
     testImplementation("org.keycloak:keycloak-admin-client:26.0.5")
 
+    testImplementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
+
+    implementation("org.springframework.cloud:spring-cloud-starter-config")
 }
 
 dependencyManagement {
     imports {
         mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
-        mavenBom("org.testcontainers:testcontainers-bom:1.20.6")
+        mavenBom("org.testcontainers:testcontainers-bom:2.0.2")
     }
 }
 

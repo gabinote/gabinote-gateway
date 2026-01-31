@@ -1,12 +1,13 @@
 package com.gabinote.gateway.route
 
+import com.gabinote.gateway.config.properties.GatewaySecretProperties
+import com.gabinote.gateway.config.properties.HeaderProperties
 import com.gabinote.gateway.dto.path.service.PathSimpleResServiceDto
-import com.gabinote.gateway.route.filter.AuthenticationFilterFactory
-import com.gabinote.gateway.route.filter.ClaimRelayFilterFactory
-import com.gabinote.gateway.route.filter.CleanRequestFilterFactory
-import com.gabinote.gateway.route.filter.RequestIdCreateFilterFactory
+import com.gabinote.gateway.route.filter.*
 import com.gabinote.gateway.service.PathService
+import com.gabinote.gateway.util.rateLimit.RateLimiterFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver
 import org.springframework.cloud.gateway.route.Route
 import org.springframework.cloud.gateway.route.RouteLocator
 import org.springframework.cloud.gateway.route.builder.BooleanSpec
@@ -18,6 +19,9 @@ import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * DB를 통해 동적으로 라우팅 설정을 제공하는 RouteLocator 구현체
+ */
 class CustomRouteLocator(
     private val pathService: PathService,
     private val routeLocatorBuilder: RouteLocatorBuilder,
@@ -25,6 +29,11 @@ class CustomRouteLocator(
     private val cleanRequestFilterFactory: CleanRequestFilterFactory,
     private val requestIdCreateFilterFactory: RequestIdCreateFilterFactory,
     private val claimsRelayFilterFactory: ClaimRelayFilterFactory,
+    private val gatewayAuthenticationCodeFilter: GatewayAuthenticationCodeFilter,
+    private val headerProperties: HeaderProperties,
+    private val gatewaySecretProperties: GatewaySecretProperties,
+    private val ipKeyResolver: KeyResolver,
+    private val rateLimiterFactory: RateLimiterFactory,
 ) : RouteLocator {
 
     override fun getRoutes(): Flux<Route> {
@@ -55,17 +64,55 @@ class CustomRouteLocator(
         setRewritePrefix(booleanSpec, path.item.prefix)
         setCommonFilters(booleanSpec)
 
+
         if (path.enableAuth) {
-            booleanSpec.filters { filterSpec ->
-                filterSpec.filter(authenticationFilterFactory.apply { config ->
-                    config.role =
-                        path.role ?: throw IllegalArgumentException("Role must be provided when enableAuth is true")
-                })
-            }
+            logger.debug { "[RouteLocator] Authentication enabled for path: ${path.path} with role: ${path.role}" }
+            setAuthenticationFilter(booleanSpec, path)
         }
+
+        if (path.isRateLimitingEnabled()) {
+            logger.debug { "[RouteLocator] Rate limiting enabled for path: ${path.path} with replenishRate: ${path.replenishRate}, burstCapacity: ${path.burstCapacity}" }
+            setRateLimit(booleanSpec, path)
+        }
+
+
         return booleanSpec.uri(path.itemUrl())
     }
 
+    private fun setRateLimit(
+        booleanSpec: BooleanSpec,
+        path: PathSimpleResServiceDto,
+    ) {
+        booleanSpec.filters { filterSpec ->
+            filterSpec.requestRateLimiter {
+                it.keyResolver = ipKeyResolver
+                it.rateLimiter = rateLimiterFactory.create(
+                    path.replenishRate!!,
+                    path.burstCapacity!!
+                )
+            }
+        }
+    }
+
+    /**
+     * 인증 필터 설정 (ROLE 활성화시 호출)
+     * @throws IllegalArgumentException role이 null인 경우 예외 발생
+     */
+    private fun setAuthenticationFilter(
+        booleanSpec: BooleanSpec,
+        path: PathSimpleResServiceDto,
+    ) {
+        booleanSpec.filters { filterSpec ->
+            filterSpec.filter(authenticationFilterFactory.apply { config ->
+                config.role =
+                    path.role ?: throw IllegalArgumentException("Role must be provided when enableAuth is true")
+            })
+        }
+    }
+
+    /**
+     * prefix가 존재하는 경우, prefix 제거 필터 설정
+     */
     private fun setRewritePrefix(route: BooleanSpec, prefix: String?) {
         if (prefix == null) return
 
@@ -74,6 +121,12 @@ class CustomRouteLocator(
         }
     }
 
+    /**
+     * 공통 필터 설정
+     * - 요청 정리 필터
+     * - 요청 ID 생성 필터
+     * - 클레임 릴레이 필터
+     */
     private fun setCommonFilters(route: BooleanSpec) {
         route
             .filters { filterSpec ->
@@ -81,16 +134,31 @@ class CustomRouteLocator(
                     .filters(
 
                         cleanRequestFilterFactory.apply { config ->
-                            CleanRequestFilterFactory.Config()
+                            config.cleanHeaders = listOf(
+                                headerProperties.subHeader,
+                                headerProperties.rolesHeader,
+                                headerProperties.secretHeader
+                            )
+
                         },
                         requestIdCreateFilterFactory.apply { config ->
-                            RequestIdCreateFilterFactory.Config()
+                            config.header = headerProperties.requestIdHeader
                         },
                         claimsRelayFilterFactory.apply { config ->
-                            ClaimRelayFilterFactory.Config()
+                            config.subHeader = headerProperties.subHeader
+                            config.roleHeader = headerProperties.rolesHeader
+                        },
+                        gatewayAuthenticationCodeFilter.apply { config ->
+                            config.secret = gatewaySecretProperties.secretKey
+                            config.header = headerProperties.secretHeader
                         }
+
                     )
             }
+    }
+
+    private fun PathSimpleResServiceDto.isRateLimitingEnabled(): Boolean {
+        return this.replenishRate != null && this.burstCapacity != null
     }
 
 }

@@ -10,11 +10,14 @@ import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger { }
 
+/**
+ * 주어진 역할(role)을 가진 사용자만 요청을 통과시킵니다.
+ */
 @Component
 class AuthenticationFilterFactory : GatewayFilterFactory<AuthenticationFilterFactory.Config> {
 
     data class Config(
-        var role: String
+        var role: String,
     )
 
     override fun newConfig(): Config {

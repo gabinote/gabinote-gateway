@@ -6,11 +6,14 @@ import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ServerWebExchange
 
+/**
+ * ClaimRelay에 사용되는 헤더들을 요청에서 제거하는 필터 팩토리
+ */
 @Component
 class CleanRequestFilterFactory : GatewayFilterFactory<CleanRequestFilterFactory.Config> {
 
     data class Config(
-        var cleanHeaders: List<String> = listOf("X-Token-Sub", "X-Token-Roles")
+        var cleanHeaders: List<String> = listOf("X-Token-Sub", "X-Token-Roles"),
     )
 
     override fun newConfig(): Config {

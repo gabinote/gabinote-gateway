@@ -10,13 +10,20 @@ private val logger = KotlinLogging.logger {}
 
 class KeycloakContainerInitializer : ApplicationContextInitializer<ConfigurableApplicationContext> {
 
+
     companion object {
+
+        const val REALM_IMPORT_FILE = "testset/keycloak/realm-export.json"
+
+        const val KEYCLOAK_ADMIN_USERNAME = "admin"
+        const val KEYCLOAK_ADMIN_PASSWORD = "admin"
+
         @JvmStatic
         val keycloak: KeycloakContainer = KeycloakContainer("quay.io/keycloak/keycloak:latest")
-            .withRealmImportFile("keycloak/realm-export.json")
-            .withLabel("group", "test-keycloak")
-            .withAdminPassword("admin")
-            .withAdminUsername("admin")
+            .withRealmImportFile(REALM_IMPORT_FILE)
+            .withLabel("test-container", "keycloak")
+            .withAdminPassword(KEYCLOAK_ADMIN_PASSWORD)
+            .withAdminUsername(KEYCLOAK_ADMIN_USERNAME)
             .withReuse(true)
     }
 
@@ -27,9 +34,10 @@ class KeycloakContainerInitializer : ApplicationContextInitializer<ConfigurableA
         logger.debug { "Keycloak started on port ${keycloak.httpPort},url ${keycloak.authServerUrl}" }
         TestPropertyValues.of(
             "spring.security.oauth2.resourceserver.jwt.issuer-uri=${keycloak.authServerUrl}/realms/gabinote-test",
-            "test-keycloak.admin-client.server-url=${keycloak.authServerUrl}",
-            "test-keycloak.admin-client.id=${keycloak.adminUsername}",
-            "test-keycloak.admin-client.password=${keycloak.adminPassword}"
+            "keycloak.admin-client.server-url=${keycloak.authServerUrl}",
+            "keycloak.admin-client.realm=gabinote-test",
+            "keycloak.admin-client.client-id=gabinote-test-client",
+            "keycloak.admin-client.client-secret=test-secret",
         ).applyTo(context.environment)
 
 

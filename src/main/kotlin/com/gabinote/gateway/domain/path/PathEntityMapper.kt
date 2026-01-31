@@ -30,6 +30,8 @@ class PathEntityMapper : BiFunction<Row, RowMetadata, Path> {
             ),
             priority = t.get("GATEWAY_PATH_PRIORITY", Int::class.java) ?: 0,
             isEnabled = t.get("GATEWAY_PATH_IS_ENABLED", Boolean::class.java) ?: true,
+            replenishRate = t.get("GATEWAY_PATH_RATE_LIMIT_REPLENISH", Integer::class.java)?.toInt(),
+            burstCapacity = t.get("GATEWAY_PATH_RATE_LIMIT_BURST", Integer::class.java)?.toInt(),
         )
     }
 }

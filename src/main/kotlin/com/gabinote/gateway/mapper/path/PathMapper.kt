@@ -12,7 +12,9 @@ object PathMapper {
             item = ItemMapper.toServiceDto(path.item),
             httpMethod = path.httpMethod,
             path = path.path,
-            isEnabled = path.isEnabled
+            isEnabled = path.isEnabled,
+            replenishRate = path.replenishRate,
+            burstCapacity = path.burstCapacity,
         )
     }
 }

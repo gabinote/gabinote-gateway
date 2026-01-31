@@ -8,7 +8,6 @@ import org.json.JSONObject
 import org.keycloak.OAuth2Constants
 import org.keycloak.admin.client.Keycloak
 import org.keycloak.admin.client.KeycloakBuilder
-import org.keycloak.representations.idm.PartialImportRepresentation
 import org.keycloak.representations.idm.RealmRepresentation
 import org.keycloak.representations.idm.UserRepresentation
 import org.springframework.beans.factory.annotation.Value
@@ -28,53 +27,98 @@ private val logger = KotlinLogging.logger {}
 class TestKeycloakUtil(
     private val restTemplate: RestTemplate = RestTemplate(),
 ) {
-    @Value("\${test-keycloak.admin-client.server-url}")
-    private lateinit var authServerUrl: String
 
-    @Value("\${test-keycloak.admin-client.realm}")
-    private lateinit var realm: String
 
-    @Value("\${test-keycloak.admin-client.id}")
-    private lateinit var adminId: String
+    @Value("\${keycloak.admin-client.client-id}")
+    lateinit var clientId: String
 
-    @Value("\${test-keycloak.admin-client.password}")
-    private lateinit var adminPassword: String
-
+    @Value("\${keycloak.admin-client.client-secret}")
+    lateinit var clientSecret: String
 
     @Value("\${keycloak.admin-client.realm}")
-    private lateinit var applicationRealm: String
+    lateinit var realm: String
 
-    @Value("\${test-keycloak.test-client.id}")
-    private lateinit var applicationClientId: String
+    @Value("\${keycloak.admin-client.server-url}")
+    lateinit var serverUrl: String
 
-    @Value("\${test-keycloak.test-client.secret}")
-    private lateinit var applicationClientSecret: String
-
-    val mapper = ObjectMapper().registerModule(kotlinModule())
-
-    private val testKeycloak: Keycloak by lazy {
+    val testKeycloak: Keycloak by lazy {
         KeycloakBuilder.builder()
-            .serverUrl(authServerUrl)
-            .realm(realm)
-            .grantType(OAuth2Constants.PASSWORD)
+            .serverUrl(serverUrl)
+            .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
+            .realm("gabinote-test")
+            .clientId("api-admin-client")
+            .clientSecret("admin-client-secret")
+            .build()
+    }
+    val adminKeycloak: Keycloak by lazy {
+        KeycloakBuilder.builder()
+            .serverUrl(serverUrl)
+            .realm("master")
             .clientId("admin-cli")
-            .username(adminId)
-            .password(adminPassword)
+            .username(KeycloakContainerInitializer.KEYCLOAK_ADMIN_USERNAME)
+            .password(KeycloakContainerInitializer.KEYCLOAK_ADMIN_PASSWORD)
             .build()
     }
 
-    fun getAccessToken(testUser: TestUser): String {
-        //run with testKeycloak admin client
-        if (testUser == TestUser.INVALID) return "invalid"
-        val tokenUrl = "$authServerUrl/realms/$applicationRealm/protocol/openid-connect/token"
+
+    val mapper = ObjectMapper().registerModule(kotlinModule())
+
+
+    fun recreateRealm() {
+        try {
+            adminKeycloak.realms().realm(realm).remove()
+            logger.info { "Realm $realm deleted successfully." }
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to delete realm $realm, it may not exist." }
+        }
+        try {
+            val resource = ClassPathResource(KeycloakContainerInitializer.REALM_IMPORT_FILE)
+            val inputStream = resource.inputStream
+
+            val realm: RealmRepresentation = mapper.readValue(inputStream)
+
+            adminKeycloak.realms().create(realm)
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to create realm $realm." }
+            throw e
+        }
+
+        // Realm 재생성 후 Service Account의 토큰을 강제로 갱신
+        refreshServiceAccountToken()
+    }
+
+
+    /**
+     * Realm 재생성 후 메인 애플리케이션의 Keycloak 빈 토큰을 갱신합니다.
+     * Realm이 삭제되면 기존 토큰이 무효화되므로 새 토큰을 발급받아야 합니다.
+     */
+    private fun refreshServiceAccountToken() {
+        try {
+            val tokenManager = testKeycloak.tokenManager()
+            // 캐시된 토큰을 무효화
+            val currentToken = tokenManager.accessTokenString
+            if (currentToken != null) {
+                tokenManager.invalidate(currentToken)
+            }
+            // 새 토큰 발급
+            tokenManager.grantToken()
+            logger.info { "Service account token refreshed successfully after realm recreation." }
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to refresh service account token, will be refreshed on next request." }
+        }
+    }
+
+    fun getTokens(testUser: TestUser): TestTokenRes {
+        if (testUser == TestUser.INVALID) throw IllegalArgumentException("Invalid user")
+        val tokenUrl = "$serverUrl/realms/$realm/protocol/openid-connect/token"
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_FORM_URLENCODED
             add("Accept", MediaType.APPLICATION_JSON_VALUE)
         }
         val body = LinkedMultiValueMap<String, String>().apply {
             add("grant_type", "password")
-            add("client_id", applicationClientId)
-            add("client_secret", applicationClientSecret)
+            add("client_id", clientId)
+            add("client_secret", clientSecret)
             add("username", testUser.id)
             add("password", testUser.password)
             add("scope", "openid email profile")
@@ -86,60 +130,19 @@ class TestKeycloakUtil(
         )
         if (response.statusCode == HttpStatus.OK) {
             val json = JSONObject(response.body)
-            return json.getString("access_token")
+            return TestTokenRes(
+                accessToken = json.getString("access_token"),
+                refreshToken = json.getString("refresh_token")
+            )
         } else {
             throw kotlin.RuntimeException("Failed to get access token: ${response.body}")
         }
     }
 
-    fun recreateRealm() {
-        // Keycloak에서 realm을 삭제하고 다시 생성하는 로직
-        try {
-            testKeycloak.realms().realm(applicationRealm).remove()
-            logger.info { "Realm $realm deleted successfully." }
-        } catch (e: Exception) {
-            logger.warn(e) { "Failed to delete realm $realm, it may not exist." }
-        }
-
-        // class path 의 keycloak/realm-export.json 파일을 사용하여 realm을 다시 생성
-        try {
-            val resource = ClassPathResource("keycloak/realm-export.json")
-            val inputStream = resource.inputStream
-
-            val realm: RealmRepresentation = mapper.readValue(inputStream)
-
-            // Realm 생성
-            testKeycloak.realms().create(realm)
-        } catch (e: Exception) {
-            logger.error(e) { "Failed to create realm $realm." }
-            throw e
-        }
-    }
-
-    fun recreateUser() {
-        try {
-            val resource = ClassPathResource("keycloak/realm-export.json")
-            val inputStream = resource.inputStream
-
-            // JSON을 RealmRepresentation으로 변환
-            val realmRepresentation: RealmRepresentation = mapper.readValue(inputStream)
-            val partialImport = PartialImportRepresentation().apply {
-                users = realmRepresentation.users
-                ifResourceExists = "OVERWRITE"
-            }
-
-
-            // Realm 생성
-            testKeycloak.realms().realm(applicationRealm).partialImport(partialImport)
-        } catch (e: Exception) {
-            logger.error(e) { "Failed to create realm $realm." }
-            throw e
-        }
-    }
 
     fun getUser(sub: String): UserRepresentation {
         try {
-            val user = testKeycloak.realm(applicationRealm).users().get(sub).toRepresentation()
+            val user = testKeycloak.realm(realm).users().get(sub).toRepresentation()
             logger.info { "User $sub retrieved successfully: $user" }
             return user
         } catch (e: Exception) {
@@ -154,7 +157,7 @@ class TestKeycloakUtil(
     ): Boolean {
         try {
             val user = getUser(sub)
-            val groups = testKeycloak.realm(applicationRealm).users().get(user.id).groups()
+            val groups = testKeycloak.realm(realm).users().get(user.id).groups()
             return groups.any { it.name == groupName }
         } catch (e: Exception) {
             logger.error(e) { "Failed to validate user group for $sub." }
@@ -162,9 +165,23 @@ class TestKeycloakUtil(
         }
     }
 
+    fun validationUserRole(
+        sub: String,
+        roleName: String,
+    ): Boolean {
+        try {
+            val user = getUser(sub)
+            val roles = testKeycloak.realm(realm).users().get(user.id).roles().realmLevel().listAll()
+            return roles.any { it.name == roleName }
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to validate user role for $sub." }
+            throw e
+        }
+    }
+
     fun validationUserExist(
         sub: String,
-        negativeMode: Boolean = false
+        negativeMode: Boolean = false,
     ): Boolean {
         return try {
             getUser(sub)
@@ -185,5 +202,25 @@ class TestKeycloakUtil(
             }
         }
     }
+
+    fun validationUserEnabled(
+        sub: String,
+        reverseMode: Boolean = false,
+    ): Boolean {
+        try {
+            val user = getUser(sub)
+            return if (reverseMode) {
+                logger.info { "User $sub enabled status is ${user.isEnabled}, reverse mode is enabled." }
+                !user.isEnabled
+            } else {
+                logger.info { "User $sub enabled status is ${user.isEnabled}." }
+                user.isEnabled
+            }
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to validate enabled status of user $sub." }
+            throw e
+        }
+    }
+
 
 }
