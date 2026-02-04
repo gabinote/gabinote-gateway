@@ -34,6 +34,7 @@ class CustomRouteLocator(
     private val gatewaySecretProperties: GatewaySecretProperties,
     private val ipKeyResolver: KeyResolver,
     private val rateLimiterFactory: RateLimiterFactory,
+    private val globalRequestLoggingFilter: GlobalRequestLoggingFilter,
 ) : RouteLocator {
 
     override fun getRoutes(): Flux<Route> {
@@ -142,6 +143,9 @@ class CustomRouteLocator(
 
                         },
                         requestIdCreateFilterFactory.apply { config ->
+                            config.header = headerProperties.requestIdHeader
+                        },
+                        globalRequestLoggingFilter.apply { config ->
                             config.header = headerProperties.requestIdHeader
                         },
                         claimsRelayFilterFactory.apply { config ->

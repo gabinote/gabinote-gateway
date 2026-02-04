@@ -29,6 +29,7 @@ class RouteLocatorConfig {
         @Qualifier("ipKeyResolver")
         keyResolver: KeyResolver,
         rateLimiterFactory: RateLimiterFactory,
+        globalRequestLoggingFilter: GlobalRequestLoggingFilter,
 
         ): RouteLocator {
         return CustomRouteLocator(
@@ -43,6 +44,7 @@ class RouteLocatorConfig {
             gatewaySecretProperties,
             keyResolver,
             rateLimiterFactory,
+            globalRequestLoggingFilter
         )
     }
 }
