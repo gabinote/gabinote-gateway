@@ -29,6 +29,7 @@
     </appender>
 
     <logger name="org.springframework" level="INFO"/>
+    <logger name="com.gabinote" level="INFO"/>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
