@@ -77,6 +77,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis-reactive")
 
     implementation("org.springframework.cloud:spring-cloud-starter-config")
+    // Source: https://mvnrepository.com/artifact/io.micrometer/micrometer-registry-prometheus
+    implementation("io.micrometer:micrometer-registry-prometheus")
 }
 
 dependencyManagement {
