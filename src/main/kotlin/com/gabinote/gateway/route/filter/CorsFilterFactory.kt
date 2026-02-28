@@ -25,21 +25,16 @@ class CorsFilterFactory : GatewayFilterFactory<CorsFilterFactory.Config> {
     override fun apply(config: Config): GatewayFilter = GatewayFilter { exchange, chain ->
         val request = exchange.request
         val response = exchange.response
+        val requestOrigin = request.headers.origin
 
-        // CORS preflight 요청 처리
-        if (request.method == HttpMethod.OPTIONS) {
-            response.statusCode = HttpStatus.OK
-            return@GatewayFilter response.setComplete()
-        }
-        val requestOrigin = exchange.request.headers.origin
-
+        // 기존 헤더 초기화
         response.headers.remove("access-control-allow-credentials")
         response.headers.remove("access-control-allow-origin")
         response.headers.remove("Access-Control-Request-Method")
 
         val allowedOrigin = when {
             requestOrigin == null -> config.defaultAllowedOrigin
-            config.allowedOrigins.contains(requestOrigin) -> config.defaultAllowedOrigin
+            config.allowedOrigins.contains(requestOrigin) -> requestOrigin // 수정된 부분
             else -> config.defaultAllowedOrigin
         }
 
@@ -64,6 +59,12 @@ class CorsFilterFactory : GatewayFilterFactory<CorsFilterFactory.Config> {
             "set-cookie",
             "access-control-expose-headers"
         )
+
+        //Preflight 요청 처리
+        if (request.method == HttpMethod.OPTIONS) {
+            response.statusCode = HttpStatus.OK
+            return@GatewayFilter response.setComplete()
+        }
 
         return@GatewayFilter chain.filter(exchange)
     }
