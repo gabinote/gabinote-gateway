@@ -1,5 +1,6 @@
 package com.gabinote.gateway.route
 
+import com.gabinote.gateway.config.properties.CorsProperties
 import com.gabinote.gateway.config.properties.GatewaySecretProperties
 import com.gabinote.gateway.config.properties.HeaderProperties
 import com.gabinote.gateway.dto.path.service.PathSimpleResServiceDto
@@ -35,6 +36,8 @@ class CustomRouteLocator(
     private val ipKeyResolver: KeyResolver,
     private val rateLimiterFactory: RateLimiterFactory,
     private val globalRequestLoggingFilter: GlobalRequestLoggingFilter,
+    private val corsFilterFactory: CorsFilterFactory,
+    private val corsProperties: CorsProperties,
 ) : RouteLocator {
 
     override fun getRoutes(): Flux<Route> {
@@ -133,7 +136,10 @@ class CustomRouteLocator(
             .filters { filterSpec ->
                 filterSpec
                     .filters(
-
+                        corsFilterFactory.apply { config ->
+                            config.allowedOrigins = corsProperties.allowedOrigins
+                            config.defaultAllowedOrigin = corsProperties.defaultAllowedOrigin
+                        },
                         cleanRequestFilterFactory.apply { config ->
                             config.cleanHeaders = listOf(
                                 headerProperties.subHeader,
