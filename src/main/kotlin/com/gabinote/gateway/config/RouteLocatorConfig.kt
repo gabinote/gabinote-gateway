@@ -1,5 +1,6 @@
 package com.gabinote.gateway.config
 
+import com.gabinote.gateway.config.properties.CorsProperties
 import com.gabinote.gateway.config.properties.GatewaySecretProperties
 import com.gabinote.gateway.config.properties.HeaderProperties
 import com.gabinote.gateway.route.CustomRouteLocator
@@ -30,6 +31,8 @@ class RouteLocatorConfig {
         keyResolver: KeyResolver,
         rateLimiterFactory: RateLimiterFactory,
         globalRequestLoggingFilter: GlobalRequestLoggingFilter,
+        corsProperties: CorsProperties,
+        corsFilterFactory: CorsFilterFactory,
 
         ): RouteLocator {
         return CustomRouteLocator(
@@ -44,7 +47,9 @@ class RouteLocatorConfig {
             gatewaySecretProperties,
             keyResolver,
             rateLimiterFactory,
-            globalRequestLoggingFilter
+            globalRequestLoggingFilter,
+            corsFilterFactory,
+            corsProperties
         )
     }
 }

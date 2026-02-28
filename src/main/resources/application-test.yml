@@ -60,3 +60,6 @@ gateway:
     secret-header: X-Gateway-Secret
   secret:
     secret-key: test-gateway-secret-key
+  cors:
+    allowed-origins: "http://localhost:3000"
+    default-allowed-origin: "*"
