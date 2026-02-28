@@ -3,6 +3,7 @@ package com.gabinote.gateway.config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
+import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
@@ -22,7 +23,7 @@ class SecurityConfig {
     @Bean
     fun clientSecurityFilterChain(
         http: ServerHttpSecurity,
-        authenticationConverter: Converter<Jwt, AbstractAuthenticationToken>
+        authenticationConverter: Converter<Jwt, AbstractAuthenticationToken>,
     ): SecurityWebFilterChain {
         // CSRF 보호 비활성화
         http.csrf { it.disable() }
@@ -41,6 +42,7 @@ class SecurityConfig {
         http
             .authorizeExchange { exchanges ->
                 exchanges
+                    .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .pathMatchers("/management/**").hasRole("ADMIN") // 해당 경로만 ROLE_ADMIN 요구
                     .anyExchange().permitAll() // 나머지는 Resource Server의 기본 인증 흐름에 맡김
             }
@@ -81,7 +83,7 @@ class SecurityConfig {
 
     @Bean
     fun grantedAuthenticationConverter(
-        authoritiesConverter: AuthoritiesConverter
+        authoritiesConverter: AuthoritiesConverter,
     ): GrantedAuthoritiesMapper =
         GrantedAuthoritiesMapper { authorities ->
             authorities
